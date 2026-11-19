@@ -2,3 +2,5 @@
 input[type="checkbox"],input[type="radio"]{width:auto;accent-color:var(--green)}
 
 .diff-list section{border-bottom:1px solid var(--line);padding:16px 0}.diff-list p{white-space:pre-wrap;overflow-wrap:anywhere}input:disabled,select:disabled{background:#edf2f1;color:#68797b}.list-row>div{min-width:0}.source,.note,.list-row p{overflow-wrap:anywhere}@media(max-width:720px){.actions button{min-height:44px}.station select{max-width:48vw}}
+
+.rail{overflow-y:auto}.nav{margin-top:22px;gap:3px}.nav button{padding:9px 16px}.nav .divider{margin:10px 12px}.evidence{background:#edf5f2;border-left:3px solid var(--green);border-radius:6px;padding:20px;margin:18px 0}.evidence .note{font-size:17px;line-height:1.8}.attention{background:#fff0d3;color:#785215}.history-entry{padding:14px 0;border-bottom:1px solid var(--line)}.history-entry p{margin:5px 0}.list-row{flex-wrap:wrap}.list-row>.actions{max-width:100%}.profile{padding-top:14px}@media(max-width:720px){.rail{overflow-y:visible}.nav{margin-top:12px;gap:6px}.nav button{padding:8px 12px}.evidence{padding:16px}.pagehead{flex-wrap:wrap}}

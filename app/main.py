@@ -68,6 +68,7 @@ class Draft(Input):
     risk: bool = False
     source: str = Field(min_length=1, max_length=500)
     content: Content
+    change_reason: str = Field(default='', max_length=1000)
 
 
 class RevisionSubmit(Input):
@@ -230,7 +231,7 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title='BarOS', version='0.2.0', lifespan=lifespan)
+app = FastAPI(title='BarOS', version='0.3.0', lifespan=lifespan)
 
 
 @app.middleware('http')
@@ -319,21 +320,24 @@ def detail(document_id: int, user=Depends(identity)):
 def ask(data: Ask, user=Depends(identity)):
     if data.station not in json.loads(user['stations']):
         fail(403, '无权访问该吧台')
-    q = re.sub(r'\s+', '', data.question).lower()
+    from .retrieval import retrieve, evidence
+    started = time.perf_counter()
     with connect(True) as db:
-        candidates = []
-        for item in accessible(db, user, data.station):
-            terms = [item['title'], *item['aliases']]
-            score = max((len(term) for term in terms if len(term) >= 2 and re.sub(r'\s+', '', term).lower() in q), default=0)
-            if score:
-                candidates.append((score, item))
-        candidates.sort(key=lambda x: x[0], reverse=True)
-        sources = [x[1] for x in candidates[:3]]
-        query_id = db.execute('INSERT INTO queries(user_id,store,station,question,revision_ids,resolved,created_at) '
-                              'VALUES(?,?,?,?,?,?,?)', (user['id'], user['store'], data.station, data.question,
-                               encode([x['revision_id'] for x in sources]), bool(sources), now())).lastrowid
-    return {'query_id': query_id, 'resolved': bool(sources), 'sources': sources,
-            'message': '找到以下有效标准，请按资料核对操作。' if sources else '未找到已审核标准，请咨询当班主管。请勿凭猜测操作。'}
+        sources, status = retrieve(data.question, accessible(db, user, data.station))
+        citations = []
+        if status == 'answered':
+            citation, status = evidence(data.question, sources[0])
+            if citation:
+                citations.append(citation)
+        if status == 'no_evidence':
+            sources = []
+        query_id = db.execute('INSERT INTO queries(user_id,store,station,question,revision_ids,resolved,created_at) VALUES(?,?,?,?,?,?,?)',
+                              (user['id'],user['store'],data.station,data.question,encode([x['revision_id'] for x in sources]),bool(citations),now())).lastrowid
+        supervisors = [{'id':r['id'],'name':r['name']} for r in db.execute("SELECT id,name,stations FROM users WHERE store=? AND active=1 AND role IN ('manager','admin')",(user['store'],)) if data.station in json.loads(r['stations'])]
+    messages = {'answered':'找到以下有效标准，请按资料核对操作。','needs_clarification':'找到多个可能适用的标准，请选择知识卡核对。','no_evidence':'未找到已审核标准，请咨询当班主管。请勿凭猜测操作。','needs_supervisor':'该问题需要主管确认，请勿自行替换配方或作安全保证。下方资料仅供核对。'}
+    return {'query_id':query_id,'resolved':bool(citations),'sources':sources,'status':status,'citations':citations,
+            'answer':citations[0]['text'] if citations else None,'message':messages[status],
+            'supervisors':supervisors,'retrieval_mode':'local_hybrid','elapsed_ms':round((time.perf_counter()-started)*1000,2)}
 
 
 @app.post('/api/feedback')
@@ -358,28 +362,35 @@ def revisions(user=Depends(manager)):
 
 @app.post('/api/manage/drafts')
 def draft(data: Draft, user=Depends(manager)):
+    with connect(True) as db:
+        return create_draft_record(db, data, user)
+
+
+def create_draft_record(db, data, user):
     if data.kind == 'recipe' and (not data.content.ingredients or not data.content.technique or not data.content.glass):
         fail(422, '配方必须填写原料、技法和杯型')
     if not set(data.stations) <= set(json.loads(user['stations'])):
         fail(403, '不可创建其他吧台的知识')
-    with connect(True) as db:
-        if data.document_id:
-            doc = db.execute('SELECT * FROM documents WHERE id=? AND store=?',
-                             (data.document_id, user['store'])).fetchone()
-            if not doc:
-                fail(404, '知识不存在')
-            expected = (data.title, data.kind, data.jobs, data.stations, data.aliases, int(data.risk))
-            actual = (doc['title'], doc['kind'], json.loads(doc['jobs']), json.loads(doc['stations']), json.loads(doc['aliases']), doc['risk'])
-            if expected != actual:
-                fail(422, '同一知识的新版本须保留标题、分类及适用范围；调整范围请建立新知识')
-            document_id = data.document_id
-        else:
-            document_id = db.execute('INSERT INTO documents(store,title,kind,jobs,stations,aliases,risk) VALUES(?,?,?,?,?,?,?)',
-                                     (user['store'], data.title, data.kind, encode(data.jobs), encode(data.stations), encode(data.aliases), data.risk)).lastrowid
-        version = db.execute('SELECT COALESCE(MAX(version),0)+1 FROM revisions WHERE document_id=?', (document_id,)).fetchone()[0]
-        rid = db.execute('INSERT INTO revisions(document_id,version,state,content,source,created_by) VALUES(?,?,?,?,?,?)',
-                         (document_id, version, 'draft', encode(data.content.model_dump()), data.source, user['id'])).lastrowid
-        audit(db, user, 'draft_created', rid)
+    if data.document_id:
+        doc = db.execute('SELECT * FROM documents WHERE id=? AND store=?',
+                         (data.document_id, user['store'])).fetchone()
+        if not doc:
+            fail(404, '知识不存在')
+        expected = (data.title, data.kind, data.jobs, data.stations, data.aliases, int(data.risk))
+        actual = (doc['title'], doc['kind'], json.loads(doc['jobs']), json.loads(doc['stations']), json.loads(doc['aliases']), doc['risk'])
+        if expected != actual:
+            fail(422, '同一知识的新版本须保留标题、分类及适用范围；调整范围请建立新知识')
+        document_id = data.document_id
+    else:
+        document_id = db.execute('INSERT INTO documents(store,title,kind,jobs,stations,aliases,risk) VALUES(?,?,?,?,?,?,?)',
+                                 (user['store'], data.title, data.kind, encode(data.jobs), encode(data.stations), encode(data.aliases), data.risk)).lastrowid
+    version = db.execute('SELECT COALESCE(MAX(version),0)+1 FROM revisions WHERE document_id=?', (document_id,)).fetchone()[0]
+    rid = db.execute('INSERT INTO revisions(document_id,version,state,content,source,created_by) VALUES(?,?,?,?,?,?)',
+                     (document_id, version, 'draft', encode(data.content.model_dump()), data.source, user['id'])).lastrowid
+    audit(db, user, 'draft_created', rid)
+    db.execute('UPDATE revisions SET change_reason=? WHERE id=?', (data.change_reason, rid))
+    from .memory import record_event
+    record_event(db, document_id, rid, user, 'draft_created', {'reason': data.change_reason})
     return {'id': rid, 'document_id': document_id, 'version': version}
 
 
@@ -393,6 +404,8 @@ def submit_revision(rid: int, data: RevisionSubmit, user=Depends(manager)):
             fail(409, '草稿已更新，请重新查看后提交')
         db.execute("UPDATE revisions SET state='review' WHERE id=?", (rid,))
         audit(db, user, 'submitted', rid)
+        from .memory import record_event
+        record_event(db, rev['document_id'], rid, user, 'submitted', {})
     return {'ok': True}
 
 
@@ -414,6 +427,8 @@ def publish(rid: int, data: Publish, user=Depends(manager)):
         db.execute("UPDATE revisions SET state='published',effective_at=?,expires_at=?,approved_by=?,approved_at=? WHERE id=?",
                    (effective, expires, user['id'], now(), rid))
         audit(db, user, 'published', rid)
+        from .memory import record_event
+        record_event(db, doc['id'], rid, user, 'published', {'effective_at': effective})
     return {'ok': True}
 
 
@@ -425,6 +440,8 @@ def retire(rid: int, user=Depends(manager)):
             fail(409, '只能停用已发布版本')
         db.execute("UPDATE revisions SET state='retired' WHERE id=?", (rid,))
         audit(db, user, 'retired', rid)
+        from .memory import record_event
+        record_event(db, rev['document_id'], rid, user, 'retired', {})
     return {'ok': True}
 
 
@@ -440,6 +457,8 @@ def resolve_feedback(fid: int, data: Resolve, user=Depends(manager)):
     with connect(True) as db:
         if not db.execute('SELECT 1 FROM feedback f JOIN queries q ON q.id=f.query_id WHERE f.id=? AND q.store=?', (fid, user['store'])).fetchone():
             fail(404, '反馈不存在')
+        if db.execute("SELECT 1 FROM knowledge_proposals WHERE feedback_id=? AND state IN ('open','draft_created')", (fid,)).fetchone():
+            fail(409, '反馈已转为提案，请在提案中记录驳回或生效后的完成结果')
         db.execute("UPDATE feedback SET state='closed',resolution=? WHERE id=?", (data.resolution, fid))
         audit(db, user, 'feedback_resolved', fid)
     return {'ok': True}
@@ -619,6 +638,8 @@ app.add_middleware(RequestLimitMiddleware)
 
 from .maintenance import router as maintenance_router
 app.include_router(maintenance_router)
+from .memory import router as memory_router
+app.include_router(memory_router)
 
 
 app.mount('/static', StaticFiles(directory=ROOT / 'web'), name='static')

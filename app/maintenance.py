@@ -13,6 +13,7 @@ class DraftEdit(Input):
     content: Content
     source: str = Field(min_length=1, max_length=500)
     edit_version: int = Field(ge=1)
+    change_reason: str = Field(default='', max_length=1000)
 
 
 class PasswordChange(Input):
@@ -98,6 +99,9 @@ def edit_draft(rid: int, data: DraftEdit, user=Depends(manager)):
             fail(422, '配方必须填写原料、技法和杯型')
         db.execute('UPDATE revisions SET content=?,source=?,edit_version=edit_version+1 WHERE id=?',
                    (encode(data.content.model_dump()), data.source, rid))
+        db.execute('UPDATE revisions SET change_reason=? WHERE id=?',(data.change_reason,rid))
+        from .memory import record_event
+        record_event(db,doc['id'],rid,user,'draft_edited',{'edit_version':data.edit_version+1,'reason':data.change_reason})
         audit(db, user, 'draft_edited', rid)
     return {'id': rid, 'edit_version': data.edit_version + 1}
 

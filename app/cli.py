@@ -62,8 +62,9 @@ def cleanup(days):
         raise SystemExit('保留天数须大于零。')
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(timespec='seconds')
     with connect(True) as db:
-        db.execute('DELETE FROM feedback WHERE query_id IN (SELECT id FROM queries WHERE created_at<?)', (cutoff,))
-        count = db.execute('DELETE FROM queries WHERE created_at<?', (cutoff,)).rowcount
+        eligible = 'SELECT id FROM queries WHERE created_at<? AND id NOT IN (SELECT query_id FROM escalations) AND id NOT IN (SELECT f.query_id FROM feedback f JOIN knowledge_proposals p ON p.feedback_id=f.id)'
+        db.execute('DELETE FROM feedback WHERE query_id IN ('+eligible+')', (cutoff,))
+        count = db.execute('DELETE FROM queries WHERE id IN ('+eligible+')', (cutoff,)).rowcount
         db.execute('DELETE FROM sessions WHERE expires<=?', (now(),))
         db.execute('DELETE FROM login_limits WHERE reset<?', (datetime.now(timezone.utc).timestamp(),))
     print(f'已清理 {count} 条过期查询记录及其反馈；培训与审计记录保留。')
