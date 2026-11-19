@@ -38,6 +38,8 @@ def connect(write=False):
 def initialize():
     with connect() as db:
         db.executescript((ROOT / 'app' / 'schema.sql').read_text(encoding='utf8'))
+    from .migrations import migrate
+    migrate()
 
 def password_hash(password, salt=None):
     salt = salt or secrets.token_hex(16)

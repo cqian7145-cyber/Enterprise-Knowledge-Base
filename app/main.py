@@ -70,6 +70,10 @@ class Draft(Input):
     content: Content
 
 
+class RevisionSubmit(Input):
+    edit_version: int | None = Field(default=None, ge=1)
+
+
 class Publish(Input):
     effective_at: str
     expires_at: str | None = None
@@ -124,7 +128,7 @@ class UserIn(Input):
 
 def public_user(user):
     return {k: json.loads(user[k]) if k == 'stations' else user[k]
-            for k in ('id', 'username', 'name', 'role', 'store', 'job', 'stations')}
+            for k in ('id', 'username', 'name', 'role', 'store', 'job', 'stations', 'must_change_password')}
 
 
 def identity(request: Request):
@@ -135,6 +139,8 @@ def identity(request: Request):
                          'WHERE s.token=? AND s.expires>? AND u.active=1', (digest, now())).fetchone()
     if not row:
         fail(401, '请先登录')
+    if row['must_change_password'] and request.url.path not in ('/api/me', '/api/password', '/api/logout'):
+        fail(403, '请先修改初始密码')
     if request.method != 'GET' and not secrets.compare_digest(request.headers.get('x-csrf-token', ''), row['csrf']):
         fail(403, '请求校验失败，请刷新后重试')
     return dict(row)
@@ -224,7 +230,7 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title='BarOS', version='0.1.0', lifespan=lifespan)
+app = FastAPI(title='BarOS', version='0.2.0', lifespan=lifespan)
 
 
 @app.middleware('http')
@@ -233,8 +239,6 @@ async def guard(request, call_next):
         origin = request.headers.get('origin')
         if origin and origin.rstrip('/') != str(request.base_url).rstrip('/'):
             return Response('Cross-origin request rejected', status_code=403)
-        if int(request.headers.get('content-length', '0') or '0') > 131072:
-            return Response('Request too large', status_code=413)
     response = await call_next(request)
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
@@ -380,11 +384,13 @@ def draft(data: Draft, user=Depends(manager)):
 
 
 @app.post('/api/manage/revisions/{rid}/submit')
-def submit_revision(rid: int, user=Depends(manager)):
+def submit_revision(rid: int, data: RevisionSubmit, user=Depends(manager)):
     with connect(True) as db:
         _, rev = get_revision(db, rid, user)
         if rev['state'] != 'draft':
             fail(409, '只能提交草稿')
+        if data.edit_version is not None and data.edit_version != rev['edit_version']:
+            fail(409, '草稿已更新，请重新查看后提交')
         db.execute("UPDATE revisions SET state='review' WHERE id=?", (rid,))
         audit(db, user, 'submitted', rid)
     return {'ok': True}
@@ -556,11 +562,14 @@ def users(user=Depends(manager)):
 
 @app.post('/api/admin/users')
 def create_user(data: UserIn, user=Depends(admin)):
+    from .maintenance import validate_options
     with connect(True) as db:
+        validate_options(db, user['store'], data.job, data.stations)
         if db.execute('SELECT 1 FROM users WHERE username=?', (data.username,)).fetchone():
             fail(409, '账号已存在')
         uid = db.execute('INSERT INTO users(username,name,password,role,store,job,stations) VALUES(?,?,?,?,?,?,?)',
                          (data.username, data.name, password_hash(data.password), data.role, user['store'], data.job, encode(data.stations))).lastrowid
+        db.execute('UPDATE users SET must_change_password=1 WHERE id=?', (uid,))
         audit(db, user, 'user_created', uid)
     return {'id': uid}
 
@@ -603,6 +612,13 @@ def audit_log(user=Depends(manager)):
 @app.get('/')
 def index():
     return FileResponse(ROOT / 'web' / 'index.html')
+
+
+from .request_limits import RequestLimitMiddleware
+app.add_middleware(RequestLimitMiddleware)
+
+from .maintenance import router as maintenance_router
+app.include_router(maintenance_router)
 
 
 app.mount('/static', StaticFiles(directory=ROOT / 'web'), name='static')

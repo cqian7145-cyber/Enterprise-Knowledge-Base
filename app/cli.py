@@ -71,9 +71,21 @@ def cleanup(days):
 
 def main():
     parser = argparse.ArgumentParser(description='BarOS 初始化与保留期限维护')
-    parser.add_argument('command', choices=['init', 'demo', 'cleanup'])
+    parser.add_argument('command', choices=['init', 'demo', 'cleanup', 'backup', 'restore'])
     parser.add_argument('--days', type=int, default=30)
+    parser.add_argument('--destination', help='备份或恢复的全新目标文件；禁止覆盖已有文件')
+    parser.add_argument('--source', help='restore使用的备份文件')
     args = parser.parse_args()
+    if args.command in ('backup', 'restore'):
+        if not args.destination or (args.command == 'restore' and not args.source):
+            parser.error('backup需要--destination；restore需要--source和--destination')
+        from .dbtools import backup, snapshot
+        try:
+            target = backup(args.destination) if args.command == 'backup' else snapshot(args.source, args.destination)
+        except (OSError, ValueError) as exc:
+            raise SystemExit(str(exc))
+        print(f'完整性验证通过：{target}。恢复到新路径后，请先验证数据再手动切换 BAROS_DB。')
+        return
     if args.command == 'cleanup':
         initialize()
         cleanup(args.days)
