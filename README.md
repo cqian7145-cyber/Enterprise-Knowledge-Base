@@ -9,7 +9,7 @@
 - 页面顶部可切换明确授权的门店；跨店身份继续用于岗位吧台隔离、培训、重学、技能证据、Flow和待办。
 - **Agents 新品上市准备**：固定七项计划草稿、负责人和期限调整、人工审批、一次性创建待办、请求幂等及工具审计。当前为规则式规划，不调用大模型。
 - 配方依据变化、负责人失效或期限失效时阻止执行；并发重试只创建一组待办。代理不会自动发布知识、修改库存或确认培训资格。
-- **72项后端测试、四套前端DOM检查通过**；真实浏览器与第二家真实门店试点仍待验收。
+- **当前73项后端测试、四套前端DOM检查，以及24项真实Chromium验收通过**（桌面／390px手机各12项）；实体设备和第二家真实门店试点仍待验收。
 - 增量迁移版本5；启动时升级，升级前备份。没有向真实门店数据库写入演示门店、计划或业务记录。
 
 用法与边界见 [迭代05交付说明](docs/ITERATION_05.md)。
@@ -147,7 +147,7 @@ $env:BAROS_DB = 'D:\Enterprise Knowledge Base\data\baros.sqlite'
 
 ## 当前边界
 
-- 本地可运行第一版，尚未经过真实门店资料验收、浏览器交互／视觉验收或公网部署验收。
+- 本地可运行版本已通过Chromium桌面／手机视口自动化验收；真实门店资料、实体设备和公网部署仍待验收。
 - 暂无文档上传解析、通用全文搜索、向量语义检索、大模型改写及多轮聊天。资料通过表单录入。
 - 已保存草稿可编辑，待审核及批准内容不能覆盖。知识的标题／范围／别名在同一知识系列中固定，变更范围需新建知识并显式停用旧标准。
 - 审核发布由主管角色确认，允许同一主管创建和批准；若门店要求双人复核，需增加提交人与审批人分离规则。
@@ -205,3 +205,24 @@ $env:BAROS_DB = 'D:\Enterprise Knowledge Base\data\baros.sqlite'
 总部负责人在HQ登记门店并显式授权人员，顶部切换门店后才访问目标店业务。既有独立门店须由原负责人申请、目标总部负责人接受迁入。分发模板 → 门店记录差异并签收 → 本店草稿 → 本店审核发布，分别跟踪签收和实际生效。
 
 Agents只生成新品准备计划草稿，主管批准当前版本后再确认创建待办。七项准备覆盖标准、库存映射、实盘、服务、培训、设备和店长确认；待办有负责人、截止时间和完成证据。没有通用自主工具运行器。详见 [总部和代理使用指南](docs/ITERATION_05.md)。
+
+## G0 真实浏览器和恢复验收
+
+常规pytest默认只运行业务／恢复测试；真实浏览器必须显式开启，不用DOM检查替代。独立CI检查分别运行Unit/DOM、Chromium桌面和390px手机；缺例、失败或跳过会阻止G0自动化通过。
+
+~~~powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-e2e.lock
+$env:PLAYWRIGHT_BROWSERS_PATH = "$PWD\.browsers"
+.\.venv\Scripts\python.exe -m playwright install --no-shell chromium
+.\.venv\Scripts\python.exe -X utf8 -m pytest --run-e2e tests/e2e -q --junitxml=test-results/e2e.xml
+.\.venv\Scripts\python.exe tools/check_e2e_report.py test-results/e2e.xml --profile all
+~~~
+
+仅用一次性合成数据库、账号和资料；失败保留trace／截图／URL／控制台和复现命令。
+
+- [真实浏览器验收记录](docs/BROWSER_ACCEPTANCE.md)
+- [恢复手册与演练](docs/RESTORE_RUNBOOK.md)
+- [自动化安全门槛](docs/SECURITY_GATE.md)
+- [现场设备清单：尚未真机验收](docs/DEVICE_CHECKLIST.md)
+
+这批仅落实G0工程验收，不新增业务模块，也不声称真实资料、真实50问、现场ROI或G1–G3已通过。
