@@ -97,6 +97,8 @@ def edit_draft(rid: int, data: DraftEdit, user=Depends(manager)):
             fail(409, '草稿已被修改，请重新打开后核对，当前输入尚未保存')
         if doc['kind'] == 'recipe' and (not data.content.ingredients or not data.content.technique or not data.content.glass):
             fail(422, '配方必须填写原料、技法和杯型')
+        from .service import validate_service
+        validate_service(doc['kind'], data.content)
         db.execute('UPDATE revisions SET content=?,source=?,edit_version=edit_version+1 WHERE id=?',
                    (encode(data.content.model_dump()), data.source, rid))
         db.execute('UPDATE revisions SET change_reason=? WHERE id=?',(data.change_reason,rid))

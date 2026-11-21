@@ -14,3 +14,9 @@ jobs:
       - run: python -m pip install -r requirements.lock
       - run: python -m pytest -q
       - run: node --check web/app.js
+      - run: node tests/test_web.cjs
+      - run: node tests/test_operations_web.cjs
+      - run: node --check web/commerce.js
+      - run: node tests/test_commerce_web.cjs
+      - run: node --check web/org.js
+      - run: node tests/test_org_web.cjs

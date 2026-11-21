@@ -22,7 +22,7 @@
 | attempts | 每次测验成绩及时间；不保存每道题的作答明文 |
 | audit | 门店、操作者、动作、对象与时间 |
 
-字段与约束的权威定义见 app/schema.sql；JSON 列的输入由 Pydantic 验证，SQL 全部参数绑定。
+字段与约束的权威定义见 app/schema.sql 和 app/migrations.py；JSON 列的输入由 Pydantic 验证，SQL 全部参数绑定。
 
 ## 版本规则
 
@@ -48,3 +48,70 @@
 6. 多实例或多租户前迁移 PostgreSQL、迁移管理、集中限流与权限回归，避免将单机 SQLite 直接共享给多个写实例。
 
 先把门店资料和测试集做好，再选择具体向量库与模型，避免当前就引入没有验证价值的运维负担。
+
+## V0.4：Academy / Flow / Command
+
+增量字段及约束见 app/migrations.py（版本3），完整使用与边界见 [迭代03](ITERATION_03.md)。
+
+| 表／字段 | 用途 |
+| --- | --- |
+| modules.course_id / version | 同一课程的不可覆盖版本；资料版本和测验随课程固定 |
+| assignments.due_at / superseded_by | 截止时间、重学任务关联；旧理论和实操结果不转移 |
+| practical_reviews | 实操通过／未通过、观察说明、文字证据、验收人、时间 |
+| flow_runs | 固定模板实例、营业日期、吧台、负责人、接班人、关闭记录及实际确认人、并发序号 |
+| flow_items | 模板项快照、检查结果、说明、现场证据和提交人 |
+| flow_incidents | 报修／清单异常、负责人、原检查项、处理证据、处理人与关闭人、并发序号 |
+
+培训每次读取与提交均检查材料当前有效性及课程最新版本。创建课程新版后，对具备资料权限的原学员在同一事务中分配重学，旧任务关联新任务，历史证据保留。
+
+工作流状态：清单 open → closed；检查项 pending → done / issue；异常 open → resolved → closed。resolved由负责人或主管提交处理结果和证据，closed由主管核对确认。清单关闭与异常关闭相互独立。交接关闭仅允许指定接班人，不能由交班人自我确认。
+
+Command按北京时间营业日汇总业务表，不依赖预测模型或外部经营指标。未创建的今日模板单列，历史遗留不因跨日消失。
+
+## V0.5：Service / Inventory / Insight
+
+服务使用documents.kind的service_script、complaint_card、service_scenario和content.service结构。三种内容进入同一版本／审核／生效／权限与课程材料体系；客诉卡须记录升级条件和负责人岗位并完成高风险确认。
+
+| 表 | 用途 |
+| --- | --- |
+| inv_skus | 原料SKU、不可覆盖的基础单位和包装换算 |
+| inv_costs | 原料历史单位成本、生效时间、采购来源 |
+| inv_products | 来源商品编码→配方系列 |
+| inv_recipe_maps | 具体批准配方版本→逐项SKU／原始配方用量／基础单位数量 |
+| inv_substitutions | 明确配方版本的替代SKU、比例、审批安全依据、有效期及撤回 |
+| inv_counts | 全SKU实盘、来源证据、盘点人及另一位主管的复核 |
+| inv_movements | 入库／报损／调入／调出、原始来源、唯一编号及作废 |
+| inv_sales_batches | 不重叠的销售来源期间、完整性声明、核对依据及作废 |
+| inv_sales | 原始销售量／制作量／净实收；绑定历史配方、消耗、成本、替代依据及缺口 |
+| insight_reports | 冻结输入、公式版本、结果和两个SHA-256，不可覆盖或删除 |
+
+版本4迁移SQL位于app/commerce_schema.sql，由事务迁移执行；已有业务表保留。整数存储千分之一基础单位及百万分之一人民币，Decimal进行输入换算和舍入。全部币种固定CNY，金额口径见迭代04。
+
+报表计算位于纯标准库app/report_math.py，不依赖API、数据库或外部服务。服务端gather冻结两次可信盘点及期间有效业务事实；calculate仅处理冻结输入。在线复算与命令行复算使用相同公式版本，后补资料、作废和价格变动不会重写旧报告。
+
+员工可读授权吧台的实盘快照、批准替代并提交盘点；主管录入库存台账及销售、维护成本映射，另一位主管复核盘点；Insight限主管。销售导入为事务操作，唯一来源编号避免重复，错误行回滚整批。成本和数量不可计算时输出null及原因，不生成虚构利润或预测。
+
+完整用法、公式、纠错、数据完整度和验收边界见 [迭代04](ITERATION_04.md)。
+
+## V0.6：HQ / Agents / 多门店上下文
+
+版本5组织数据位于app/org_schema.sql，迁移保留原store业务编号。tenants → stores表达公司和门店；hq_members表达总部负责人；store_grants表达有期限的目标门店角色／岗位／吧台授权。既有门店默认分别属于独立租户，不能靠共享数据库自动获得跨店访问。
+
+身份依赖先认证会话，再由app/tenancy.py解析目标门店上下文。X-BarOS-Store没有授权能力，必须同时属于同租户和有效grant。原模块继续按当前store／job／stations过滤；人员选择和培训通过scoped_person应用跨店实际权限。
+
+| 表 | 用途 |
+| --- | --- |
+| tenants / stores / hq_members | 租户、门店和总部负责人 |
+| store_grants / store_transfers | 有期限跨店授权；单店迁入申请与目标确认 |
+| hq_templates | 不可覆盖的总部模板版本、提交及批准 |
+| hq_deliveries / hq_adoptions | 指定版本发布、签收／差异、本店草稿及采用关联 |
+| work_tasks | 人工与代理共用待办，负责人、期限、完成证据及并发序号 |
+| agent_plans | 固定规划器输入快照、七项草稿、序号、人工审批和执行状态 |
+| business_requests | 按操作者／门店／动作／幂等编号绑定请求哈希和结果 |
+| agent_tool_events | 唯一工具的成功／重放／阻止、请求哈希和说明 |
+
+迁入采用事务更新门店租户、撤回旧授权和原总部身份并撤销源店会话；不重写业务表。签收采用本店身份创建草稿，仍需原发布流程确认。门店实际生效状态由原版本有效性规则读取，不以签收状态代替。
+
+Agents的fixed_launch_readiness_v1为规则式规划器，唯一写工具create_launch_todos复用业务待办函数。批准后执行仍校验配方快照、当前有效范围、人员与期限；BEGIN IMMEDIATE内完成幂等检查和七项任务创建。失败工具调用在原事务回滚后单独记审计。没有任意HTTP、Shell或自主发布入口。
+
+真实门店与浏览器验收边界见 [迭代05](ITERATION_05.md)。

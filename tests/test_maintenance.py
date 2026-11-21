@@ -106,7 +106,7 @@ def test_snapshot_restore_no_overwrite_and_migration(clients, tmp_path, monkeypa
     monkeypatch.setenv('BAROS_DB',str(restored))
     initialize(); initialize()
     with connect() as db:
-        assert [r[0] for r in db.execute('SELECT version FROM schema_migrations ORDER BY version')] == [1, 2]
+        assert [r[0] for r in db.execute('SELECT version FROM schema_migrations ORDER BY version')] == [1, 2, 3, 4, 5]
 
 
 def test_legacy_database_upgrade_preserves_data(tmp_path,monkeypatch):

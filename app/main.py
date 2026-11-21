@@ -41,8 +41,18 @@ class Ingredient(Input):
     unit: Literal['ml', 'g', '滴', '片', '个', '份']
 
 
+class ServiceFields(Input):
+    context: str = Field(min_length=5,max_length=1000)
+    response: str = Field(min_length=5,max_length=2000)
+    escalation_trigger: str = Field(default='',max_length=1000)
+    escalation_contact: str = Field(default='',max_length=300)
+    practice_prompt: str = Field(default='',max_length=2000)
+    assessment_points: list[str] = Field(default_factory=list,max_length=20)
+
+
 class Content(Input):
     summary: str = Field(min_length=1, max_length=2000)
+    service: ServiceFields | None = None
     steps: list[str] = Field(min_length=1, max_length=30)
     ingredients: list[Ingredient] = Field(default_factory=list, max_length=30)
     technique: str = Field(default='', max_length=300)
@@ -61,7 +71,7 @@ class Content(Input):
 class Draft(Input):
     document_id: int | None = None
     title: str = Field(min_length=1, max_length=120)
-    kind: Literal['recipe', 'sop', 'rule']
+    kind: Literal['recipe', 'sop', 'rule', 'service_script', 'complaint_card', 'service_scenario']
     jobs: list[str] = Field(min_length=1, max_length=20)
     stations: list[str] = Field(min_length=1, max_length=20)
     aliases: list[str] = Field(default_factory=list, max_length=30)
@@ -108,6 +118,7 @@ class ModuleIn(Input):
 class Assign(Input):
     module_id: int
     user_id: int
+    due_at: str | None = None
 
 
 class Submit(Input):
@@ -128,14 +139,16 @@ class UserIn(Input):
 
 
 def public_user(user):
-    return {k: json.loads(user[k]) if k == 'stations' else user[k]
-            for k in ('id', 'username', 'name', 'role', 'store', 'job', 'stations', 'must_change_password')}
+    result = {k: json.loads(user[k]) if k == 'stations' else user[k]
+              for k in ('id', 'username', 'name', 'role', 'store', 'job', 'stations', 'must_change_password')}
+    data = dict(user)
+    return {**result, 'home_store': data.get('home_store',user['store']), 'tenant_id': data.get('tenant_id'), 'hq_owner': bool(data.get('hq_owner',False))}
 
 
 def identity(request: Request):
     token = request.cookies.get('baros_session', '')
     digest = hashlib.sha256(token.encode()).hexdigest()
-    with connect() as db:
+    with connect(True) as db:
         row = db.execute('SELECT u.*,s.csrf FROM sessions s JOIN users u ON u.id=s.user_id '
                          'WHERE s.token=? AND s.expires>? AND u.active=1', (digest, now())).fetchone()
     if not row:
@@ -144,7 +157,9 @@ def identity(request: Request):
         fail(403, '请先修改初始密码')
     if request.method != 'GET' and not secrets.compare_digest(request.headers.get('x-csrf-token', ''), row['csrf']):
         fail(403, '请求校验失败，请刷新后重试')
-    return dict(row)
+    from .tenancy import context
+    with connect(True) as db:
+        return context(db, dict(row), request.headers.get('x-baros-store') if request.url.path not in ('/api/logout','/api/password') else None)
 
 
 def manager(user=Depends(identity)):
@@ -231,7 +246,7 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title='BarOS', version='0.3.0', lifespan=lifespan)
+app = FastAPI(title='BarOS', version='0.6.0', lifespan=lifespan)
 
 
 @app.middleware('http')
@@ -279,7 +294,10 @@ def login(data: Login, response: Response, request: Request):
         fail(401, '账号或密码不正确')
     response.set_cookie('baros_session', token, httponly=True, samesite='strict',
                         secure=os.getenv('BAROS_SECURE_COOKIE') == '1', max_age=43200)
-    return {'user': public_user(user), 'csrf': csrf}
+    from .tenancy import context
+    with connect(True) as db:
+        logged_user = context(db, dict(user))
+    return {'user': public_user(logged_user), 'csrf': csrf}
 
 
 DUMMY_PASSWORD = password_hash(secrets.token_urlsafe(20))
@@ -367,6 +385,10 @@ def draft(data: Draft, user=Depends(manager)):
 
 
 def create_draft_record(db, data, user):
+    from .service import validate_service
+    validate_service(data.kind, data.content)
+    if data.kind == 'complaint_card':
+        data = data.model_copy(update={'risk': True})
     if data.kind == 'recipe' and (not data.content.ingredients or not data.content.technique or not data.content.glass):
         fail(422, '配方必须填写原料、技法和杯型')
     if not set(data.stations) <= set(json.loads(user['stations'])):
@@ -419,7 +441,9 @@ def publish(rid: int, data: Publish, user=Depends(manager)):
         doc, rev = get_revision(db, rid, user)
         if rev['state'] != 'review':
             fail(409, '只能发布待审核版本')
-        if (doc['risk'] or (doc['kind'] == 'recipe' and json.loads(rev['content']).get('allergens'))) and not data.risk_confirmed:
+        from .service import validate_service
+        validate_service(doc['kind'], Content.model_validate(json.loads(rev['content'])))
+        if (doc['risk'] or doc['kind'] == 'complaint_card' or (doc['kind'] == 'recipe' and json.loads(rev['content']).get('allergens'))) and not data.risk_confirmed:
             fail(422, '高风险知识须由负责人确认标准资料')
         if db.execute('SELECT 1 FROM revisions WHERE document_id=? AND approved_at IS NOT NULL AND version>?',
                       (doc['id'], rev['version'])).fetchone():
@@ -466,34 +490,47 @@ def resolve_feedback(fid: int, data: Resolve, user=Depends(manager)):
 
 @app.post('/api/manage/modules')
 def create_module(data: ModuleIn, user=Depends(manager)):
-    if any(q.answer >= len(q.options) for q in data.quiz):
-        fail(422, '正确答案索引超出选项范围')
+    from .academy import create_course
     with connect(True) as db:
-        active_materials(db, data.revision_ids, user)
-        mid = db.execute('INSERT INTO modules(store,title,objective,revision_ids,quiz,pass_score,created_by) VALUES(?,?,?,?,?,?,?)',
-                         (user['store'], data.title, data.objective, encode(data.revision_ids), encode([q.model_dump() for q in data.quiz]), data.pass_score, user['id'])).lastrowid
-        audit(db, user, 'module_created', mid)
-    return {'id': mid}
+        return create_course(db, data, user)
 
 
 @app.get('/api/manage/modules')
 def list_modules(user=Depends(manager)):
+    from .academy import latest
     with connect() as db:
-        return [{**dict(r), 'revision_ids': json.loads(r['revision_ids']), 'quiz': json.loads(r['quiz'])}
-                for r in db.execute('SELECT * FROM modules WHERE store=?', (user['store'],))]
+        result = []
+        for r in db.execute('SELECT * FROM modules WHERE store=? ORDER BY id DESC', (user['store'],)):
+            item = {**dict(r), 'course_id': r['course_id'] or r['id'], 'revision_ids': json.loads(r['revision_ids']), 'quiz': json.loads(r['quiz']), 'is_latest': latest(db, r)['id'] == r['id']}
+            try:
+                active_materials(db, item['revision_ids'], user)
+                item['stale'] = False
+            except HTTPException:
+                item['stale'] = True
+            result.append(item)
+        return result
 
 
 @app.post('/api/manage/assignments')
 def assign(data: Assign, user=Depends(manager)):
     with connect(True) as db:
         module = db.execute('SELECT * FROM modules WHERE id=? AND store=?', (data.module_id, user['store'])).fetchone()
-        target = db.execute('SELECT * FROM users WHERE id=? AND store=? AND active=1', (data.user_id, user['store'])).fetchone()
+        from .tenancy import scoped_person
+        target = scoped_person(db, data.user_id, user['store'])
         if not module or not target:
             fail(404, '员工或培训模块不存在')
+        from .academy import latest
+        if latest(db, module)['id'] != module['id']:
+            fail(409, '请分配最新课程版本')
+        active_materials(db, json.loads(module['revision_ids']), user)
         active_materials(db, json.loads(module['revision_ids']), target)
+        due = normalized_date(data.due_at) if data.due_at else None
+        if due and due <= now():
+            fail(422, '截止时间必须晚于当前时间')
         if db.execute('SELECT 1 FROM assignments WHERE module_id=? AND user_id=?', (data.module_id, data.user_id)).fetchone():
             fail(409, '该员工已被分配此模块')
-        aid = db.execute('INSERT INTO assignments(module_id,user_id,assigned_by) VALUES(?,?,?)', (data.module_id, data.user_id, user['id'])).lastrowid
+        aid = db.execute('INSERT INTO assignments(module_id,user_id,assigned_by,assigned_at,due_at) VALUES(?,?,?,?,?)', (data.module_id, data.user_id, user['id'], now(), due)).lastrowid
+        db.execute('UPDATE assignments SET superseded_by=? WHERE user_id=? AND id<>? AND superseded_by IS NULL AND module_id IN (SELECT id FROM modules WHERE COALESCE(course_id,id)=?)', (aid, data.user_id, aid, module['course_id'] or module['id']))
         audit(db, user, 'training_assigned', aid)
     return {'id': aid}
 
@@ -511,23 +548,16 @@ def training(user=Depends(identity)):
     with connect() as db:
         rows = db.execute('SELECT a.*,m.title,m.pass_score FROM assignments a JOIN modules m ON m.id=a.module_id '
                           'WHERE a.user_id=? AND m.store=?', (user['id'], user['store'])).fetchall()
-        result = []
-        for r in rows:
-            item = dict(r)
-            full = assignment_row(db, r['id'], user, True)
-            try:
-                active_materials(db, json.loads(full['revision_ids']), user)
-                item['stale'] = False
-            except HTTPException:
-                item['stale'] = True
-            result.append(item)
-        return result
+        from .academy import assignment_status
+        return [assignment_status(db, r, user) for r in rows]
 
 
 @app.get('/api/training/{aid}')
 def training_detail(aid: int, user=Depends(identity)):
     with connect() as db:
         row = assignment_row(db, aid, user, True)
+        from .academy import require_current_course
+        require_current_course(db, row)
         materials = active_materials(db, json.loads(row['revision_ids']), user)
         quiz = [{k: v for k, v in q.items() if k != 'answer'} for q in json.loads(row['quiz'])]
         return {**dict(row), 'quiz': quiz, 'materials': materials}
@@ -537,6 +567,8 @@ def training_detail(aid: int, user=Depends(identity)):
 def exam(aid: int, data: Submit, user=Depends(identity)):
     with connect(True) as db:
         row = assignment_row(db, aid, user, True)
+        from .academy import require_current_course
+        require_current_course(db, row)
         active_materials(db, json.loads(row['revision_ids']), user)
         quiz = json.loads(row['quiz'])
         if len(data.answers) != len(quiz) or any(a < 0 or a >= len(q['options']) for a, q in zip(data.answers, quiz)):
@@ -549,18 +581,29 @@ def exam(aid: int, data: Submit, user=Depends(identity)):
 
 @app.get('/api/manage/training')
 def progress(user=Depends(manager)):
+    from .academy import assignment_status
     with connect() as db:
-        return [dict(r) for r in db.execute('SELECT a.*,m.title,m.pass_score,u.name FROM assignments a '
-                                           'JOIN modules m ON m.id=a.module_id JOIN users u ON u.id=a.user_id WHERE m.store=?', (user['store'],))]
+        result = []
+        for r in db.execute('SELECT a.*,m.title,m.pass_score,u.name FROM assignments a JOIN modules m ON m.id=a.module_id JOIN users u ON u.id=a.user_id WHERE m.store=?', (user['store'],)):
+            from .tenancy import scoped_person
+            target = scoped_person(db, r['user_id'], user['store'], True) or db.execute('SELECT * FROM users WHERE id=?',(r['user_id'],)).fetchone()
+            result.append({**assignment_status(db, r, target), 'active': bool(target['active'])})
+        return result
 
 
 @app.post('/api/manage/training/{aid}/practical')
 def practical(aid: int, data: Practical, user=Depends(manager)):
+    if len(data.note.strip()) < 5:
+        fail(422, '请填写至少5字的实操观察记录')
     with connect(True) as db:
         row = assignment_row(db, aid, user)
+        from .academy import require_current_course
+        require_current_course(db, row)
+        active_materials(db, json.loads(row['revision_ids']), user)
         if row['user_id'] == user['id']:
             fail(403, '不可验收自己的上岗任务')
-        target = db.execute('SELECT * FROM users WHERE id=? AND active=1', (row['user_id'],)).fetchone()
+        from .tenancy import scoped_person
+        target = scoped_person(db, row['user_id'], user['store'])
         if not target:
             fail(409, '员工账号已停用')
         active_materials(db, json.loads(row['revision_ids']), target)
@@ -569,6 +612,7 @@ def practical(aid: int, data: Practical, user=Depends(manager)):
         if row['practical_at']:
             fail(409, '已经验收，请保留原始记录')
         db.execute('UPDATE assignments SET practical_by=?,practical_note=?,practical_at=? WHERE id=?', (user['id'], data.note, now(), aid))
+        db.execute('INSERT INTO practical_reviews(assignment_id,reviewer_id,passed,note,evidence,created_at) VALUES(?,?,1,?,?,?)', (aid, user['id'], data.note, data.note, now()))
         audit(db, user, 'practical_confirmed', aid)
     return {'ok': True}
 
@@ -576,7 +620,8 @@ def practical(aid: int, data: Practical, user=Depends(manager)):
 @app.get('/api/manage/users')
 def users(user=Depends(manager)):
     with connect() as db:
-        return [public_user(r) for r in db.execute('SELECT * FROM users WHERE store=? AND active=1', (user['store'],))]
+        from .tenancy import scoped_people
+        return [public_user(r) for r in scoped_people(db, user['store'])]
 
 
 @app.post('/api/admin/users')
@@ -641,5 +686,24 @@ app.include_router(maintenance_router)
 from .memory import router as memory_router
 app.include_router(memory_router)
 
+
+from .academy import router as academy_router
+app.include_router(academy_router)
+from .operations import router as operations_router
+app.include_router(operations_router)
+
+from .service import router as service_router
+app.include_router(service_router)
+from .inventory import router as inventory_router
+app.include_router(inventory_router)
+from .insight import router as insight_router
+app.include_router(insight_router)
+
+from .hq import router as hq_router
+app.include_router(hq_router)
+from .tasks import router as tasks_router
+app.include_router(tasks_router)
+from .agents import router as agents_router
+app.include_router(agents_router)
 
 app.mount('/static', StaticFiles(directory=ROOT / 'web'), name='static')

@@ -53,7 +53,8 @@ def seed(db):
     mid = db.execute('INSERT INTO modules(store,title,objective,revision_ids,quiz,pass_score,created_by) VALUES(?,?,?,?,?,100,1)',
                      ('pilot', '第一班：开吧与标准查询', '学会查找当前有效标准，并在无法确认时向主管求助。', encode([revision_ids[1]]),
                       encode([{'question': '没有找到已审核标准时应该怎么做？', 'options': ['凭经验猜测', '咨询当班主管'], 'answer': 1}]))).lastrowid
-    db.execute('INSERT INTO assignments(module_id,user_id,assigned_by) VALUES(?,2,1)', (mid,))
+    db.execute('UPDATE modules SET course_id=id,created_at=? WHERE id=?', (now(), mid))
+    db.execute('INSERT INTO assignments(module_id,user_id,assigned_by,assigned_at) VALUES(?,2,1,?)', (mid,now()))
     audit(db, {'id': 1, 'store': 'pilot'}, 'demo_seeded', 'explicit-demo-only')
 
 

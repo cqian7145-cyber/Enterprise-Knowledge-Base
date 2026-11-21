@@ -38,8 +38,13 @@ def retrieve(question, items):
     if re.search(r'忽略.{0,8}(权限|指令|规则)|绕过|显示所有草稿|system prompt|ignore.{0,12}(instructions|previous)',raw):
         return [], 'no_evidence'
     # These intents require standards of their own, not a nearby handover/recipe card.
-    if re.search(r'申请|排班|工资|退款|库存|盘点|折扣|价格|多少钱|保质期|密码|私人电话|财务|赊账|药物', raw):
+    if re.search(r'申请|排班|工资|库存|盘点|保质期|密码|私人电话|财务|赊账|药物', raw):
         return [], 'no_evidence'
+    if re.search(r'退款|折扣|价格|多少钱', raw):
+        query_text=normalize(question)
+        items=[item for item in items if item['kind'] in ('service_script','complaint_card','service_scenario') and any(len(normalize(label))>=2 and normalize(label) in query_text for label in [item['title'],*item['aliases']])]
+        if not items:
+            return [], 'no_evidence'
     query=normalize(question)
     expanded=expand(question)
     qtokens=tokens(expanded)
@@ -77,6 +82,13 @@ def evidence(question, item):
     elif any(x in q for x in ['技法','手法','technique']):field='technique'
     elif item['kind']=='recipe' and any(x in q for x in ['多少','用量','原料','配料','配方','ml','毫升']):field='ingredients'
     elif item['kind']=='sop' or any(x in q for x in ['步骤','怎么','流程','顺序']):field='steps'
+    if item['kind'] in ('service_script','complaint_card','service_scenario') and c.get('service'):
+        if item['kind']=='complaint_card':
+            s=c['service']
+            text=s['response']+'；升级条件：'+s['escalation_trigger']+'；升级至：'+s['escalation_contact']
+        else:
+            text=c['service']['response']
+        return {'revision_id':item['revision_id'],'document_id':item['id'],'title':item['title'],'version':item['version'],'field':'service','text':text,'source':item['source'],'effective_at':item['effective_at'],'url':'/api/citations/'+str(item['revision_id'])},'answered'
     value=c.get(field)
     if not value:return None,'no_evidence'
     if isinstance(value,list):
