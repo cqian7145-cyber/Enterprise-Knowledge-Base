@@ -7,3 +7,5 @@ data/
 *.log
 node_modules/
 .codex/
+.browsers/
+test-results/
