@@ -1,5 +1,7 @@
 # BarOS · 酒吧员工知识与培训工作台
 
+当前集成候选：**V0.7.0-rc.1**。包含V0.6业务、G0自动化和NIGHTFALL合成资料；main是否晋级以GitHub实际HEAD/人工合并结果为准。见[候选基线](docs/V07_BASELINE.md)、[下一任务](docs/TASK_008_REAL_QUESTIONS.md)。
+
 基于 2026-11-19 V0.1 PRD 的可运行实现，当前版本 V0.6：新增 HQ 连锁总部与 Agents 新品上市准备。Python / FastAPI / SQLite + 原生响应式网页。适合首家门店整理资料、演示与小范围验证。
 
 ## 本轮新增（V0.6）
