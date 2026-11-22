@@ -5,5 +5,5 @@ def pytest_addoption(parser):
 
 
 def pytest_ignore_collect(collection_path,config):
-    if collection_path.name=='e2e' and collection_path.parent.name=='tests' and not config.getoption('--run-e2e'):
+    if collection_path.name in ('e2e','demo_e2e') and collection_path.parent.name=='tests' and not config.getoption('--run-e2e'):
         return True

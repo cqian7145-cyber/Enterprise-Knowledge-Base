@@ -270,6 +270,16 @@ def health():
     return {'status': 'ok', 'answer_mode': 'approved_extracts'}
 
 
+@app.get('/api/environment')
+def environment():
+    # Persistent database identity, never an environment flag claiming real data is simulated.
+    with connect() as db:
+        if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='demo_manifest'").fetchone():
+            row=db.execute('SELECT dataset FROM demo_manifest WHERE id=1').fetchone()
+            if row:return {'simulated':True,'label':'SIMULATED DATA / 模拟数据','dataset':row['dataset']}
+    return {'simulated':False}
+
+
 @app.post('/api/login')
 def login(data: Login, response: Response, request: Request):
     key = hashlib.sha256((request.client.host + ':' + data.username).encode()).hexdigest()
