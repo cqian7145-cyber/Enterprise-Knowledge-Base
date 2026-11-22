@@ -1,0 +1,194 @@
+{
+  "generated_at_utc": "2026-11-22T07:35:51.615Z",
+  "candidate_version": "0.7.0-rc.1",
+  "tested_code_head": "e73b1ca448e5958e8bbadc81c5d96abc843e3119",
+  "real_main_head": "a17518c98525106bccc2f8717ec8b7ddef3c5e7e",
+  "remote_observation": {
+    "checked_at": "2026-11-22T07:29:29.659Z",
+    "runs": [
+      {
+        "id": 44997993365,
+        "sha": "92ddf094c85f0ef374bcf4676c8a75eb6de47b4f",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/cqian7145-cyber/Enterprise-Knowledge-Base/actions/runs/44997993365"
+      },
+      {
+        "id": 44917355196,
+        "sha": "2a7c18b0d64c5ab80d963c5c6566b3a159e332f8",
+        "event": "pull_request",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/cqian7145-cyber/Enterprise-Knowledge-Base/actions/runs/44917355196"
+      },
+      {
+        "id": 44917302394,
+        "sha": "2a7c18b0d64c5ab80d963c5c6566b3a159e332f8",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/cqian7145-cyber/Enterprise-Knowledge-Base/actions/runs/44917302394"
+      },
+      {
+        "id": 44913582122,
+        "sha": "4e86ad26e0d48d47c6cb8df60e35821f7b4f7126",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/cqian7145-cyber/Enterprise-Knowledge-Base/actions/runs/44913582122"
+      },
+      {
+        "id": 44586642314,
+        "sha": "31618317256a69d5756cda3efc5e96e08bdd63aa",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/cqian7145-cyber/Enterprise-Knowledge-Base/actions/runs/44586642314"
+      },
+      {
+        "id": 44564546680,
+        "sha": "d4703997f8419896899844b0b2d704a1db94ae1b",
+        "event": "push",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/cqian7145-cyber/Enterprise-Knowledge-Base/actions/runs/44564546680"
+      }
+    ],
+    "prs": [
+      {
+        "number": 1,
+        "state": "open",
+        "merged": false,
+        "draft": false,
+        "base": "4e86ad26e0d48d47c6cb8df60e35821f7b4f7126",
+        "head": "2a7c18b0d64c5ab80d963c5c6566b3a159e332f8",
+        "mergeable": true,
+        "mergeable_state": "clean"
+      }
+    ]
+  },
+  "local_results": [
+    {
+      "file": "docs\\evidence\\v07-python.xml",
+      "tests": 84,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 260.307,
+      "sha256": "288526ca07155ee93e9423d22114a643ed21f73af74890d11afc83ada4825506"
+    },
+    {
+      "file": "docs\\evidence\\v07-g0.xml",
+      "tests": 24,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 182.648,
+      "sha256": "7518d6b95d75dbf95c607db983103ccda8fd9e6d262e305e5db1bc8f5cb35dab"
+    },
+    {
+      "file": "docs\\evidence\\v07-nightfall.xml",
+      "tests": 12,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 153.199,
+      "sha256": "45c3c11ed1e041a869e8019a6f704f0bb240fc967894512b588d25eb96930bfd"
+    }
+  ],
+  "node_suites": [
+    {
+      "file": "tests/test_web.cjs",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/test_operations_web.cjs",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/test_commerce_web.cjs",
+      "exit_code": 0
+    },
+    {
+      "file": "tests/test_org_web.cjs",
+      "exit_code": 0
+    }
+  ],
+  "pip_check": "passed",
+  "javascript_syntax": "passed",
+  "g0_coverage": {
+    "passed": true,
+    "suite": "g0",
+    "profile": "all",
+    "tests": 24,
+    "skipped": 0,
+    "cases": [
+      "E01/desktop",
+      "E01/mobile",
+      "E02/desktop",
+      "E02/mobile",
+      "E03/desktop",
+      "E03/mobile",
+      "E04/desktop",
+      "E04/mobile",
+      "E05/desktop",
+      "E05/mobile",
+      "E06/desktop",
+      "E06/mobile",
+      "E07/desktop",
+      "E07/mobile",
+      "E08/desktop",
+      "E08/mobile",
+      "E09/desktop",
+      "E09/mobile",
+      "E10/desktop",
+      "E10/mobile",
+      "E11/desktop",
+      "E11/mobile",
+      "E12/desktop",
+      "E12/mobile"
+    ]
+  },
+  "nightfall_coverage": {
+    "passed": true,
+    "suite": "nightfall",
+    "profile": "all",
+    "tests": 12,
+    "skipped": 0,
+    "cases": [
+      "NF01/desktop",
+      "NF01/mobile",
+      "NF02/desktop",
+      "NF02/mobile",
+      "NF03/desktop",
+      "NF03/mobile",
+      "NF04/desktop",
+      "NF04/mobile",
+      "NF05/desktop",
+      "NF05/mobile",
+      "NF06/desktop",
+      "NF06/mobile"
+    ]
+  },
+  "environment": {
+    "python": "3.14.2",
+    "node": "24.22.1",
+    "platform": "Windows 11 / 10.0.26200",
+    "playwright": "1.65.2"
+  },
+  "main_promoted": false,
+  "real_device_acceptance": false,
+  "real_venue_question_evaluation": false,
+  "later_remote_observation": {
+    "checked_at_utc": "2026-11-22T07:39:31.213Z",
+    "pr1_merged_by_remote": true,
+    "pr1_merged_at": "2026-11-22T07:30:48Z",
+    "nightfall_main_base_head": "7da2ca2acb909d2a16cbf237e45453d73082a9dc",
+    "nightfall_pr": 4,
+    "baseline_pr": 3,
+    "superseded_pr": 2,
+    "candidate_merge_tree_unchanged": true,
+    "agent_merged_pr": false
+  }
+}

@@ -30,6 +30,8 @@ def close_dialog(actor):
 
 def test_E01_login_query_feedback_offline_and_viewport(app):
     staff=app.login('staff');page=staff.page
+    assert staff.context.request.get('/api/environment').json()=={'simulated':False}
+    expect(page.locator('#environment-banner')).to_be_hidden()
     assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth'),page.evaluate('({document:document.documentElement.scrollWidth,viewport:window.innerWidth})')
     staff.ask('金汤力的标准配方是什么？')
     expect(page.locator('#answer')).to_contain_text('45 ml')
