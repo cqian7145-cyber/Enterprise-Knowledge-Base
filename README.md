@@ -226,3 +226,24 @@ $env:PLAYWRIGHT_BROWSERS_PATH = "$PWD\.browsers"
 - [现场设备清单：尚未真机验收](docs/DEVICE_CHECKLIST.md)
 
 这批仅落实G0工程验收，不新增业务模块，也不声称真实资料、真实50问、现场ROI或G1–G3已通过。
+
+
+## Task 006：NIGHTFALL 全业务模拟资料
+
+全虚构NIGHTFALL品牌，72条知识系列（26款饮品）、18名主店员工、分店/独立租户、8个课程系列、14日Flow、32SKU、可复算销售/盘点、HQ签收差异和受控上新计划。全部醒目标注SIMULATED DATA / 模拟数据，不是实际经营事实或正式岗位认证。
+
+~~~powershell
+.\.venv\Scripts\python.exe -m app.cli seed-realistic-demo --database "D:\workspace\nightfall-demo.sqlite" --environment demo --confirm SIMULATED-DATA
+# 交互设置演示密码；没有默认密码。重复执行原命令保留数据并返回unchanged。
+$env:BAROS_DB = 'D:\workspace\nightfall-demo.sqlite'
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8006
+~~~
+
+常用账号nf_admin、nf_new、nf_retry、nf_bar1、nf_server1；密码由操作人输入。只能导入独立新路径，拒绝默认业务库及已有非本数据集文件；启动应用不会导入。重建使用另一个新demo文件名，禁止覆盖。
+
+- [初始化、隔离与重建](docs/DEMO_SETUP.md)
+- [逐步演示业务故事](docs/DEMO_SCENARIOS.md)
+- [模拟数据字典与来源](docs/DEMO_DATA_DICTIONARY.md)
+- [Task 006实际验收记录](docs/DEMO_ACCEPTANCE.md)
+
+真实浏览器验收：python -m pytest --run-e2e tests/demo_e2e -q。常规pytest不收集浏览器；CI在桌面和手机两项矩阵中追加NF01–NF06并拒绝缺例/跳过。合成资料验收不能代替真实资料/真机/G1–G3验收。

@@ -1,0 +1,408 @@
+{
+  "label": "SIMULATED DATA / 模拟数据",
+  "synthetic_only": true,
+  "real_venue_acceptance": false,
+  "definition": "Exact title/alias regression set; not a semantic RAG quality or real venue 50-question benchmark. Current revision IDs must be resolved at query time.",
+  "cases": [
+    {
+      "id": "NF-Q01",
+      "question": "夜幕金汤力",
+      "expected_title": "夜幕金汤力",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q02",
+      "question": "经典黛绮莉",
+      "expected_title": "经典黛绮莉",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q03",
+      "question": "经典玛格丽特",
+      "expected_title": "经典玛格丽特",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q04",
+      "question": "经典内格罗尼",
+      "expected_title": "经典内格罗尼",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q05",
+      "question": "经典马天尼",
+      "expected_title": "经典马天尼",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q06",
+      "question": "经典莫吉托",
+      "expected_title": "经典莫吉托",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q07",
+      "question": "经典威士忌酸",
+      "expected_title": "经典威士忌酸",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q08",
+      "question": "经典边车",
+      "expected_title": "经典边车",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q09",
+      "question": "浓缩咖啡马天尼",
+      "expected_title": "浓缩咖啡马天尼",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q10",
+      "question": "经典自由古巴变奏",
+      "expected_title": "经典自由古巴变奏",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q11",
+      "question": "都会红莓",
+      "expected_title": "都会红莓",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q12",
+      "question": "午后贝里尼",
+      "expected_title": "午后贝里尼",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q13",
+      "question": "夜航乌龙",
+      "expected_title": "夜航乌龙",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q14",
+      "question": "暮色桂花",
+      "expected_title": "暮色桂花",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q15",
+      "question": "霓虹西柚",
+      "expected_title": "霓虹西柚",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q16",
+      "question": "暗巷咖啡",
+      "expected_title": "暗巷咖啡",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q17",
+      "question": "露台晚风",
+      "expected_title": "露台晚风",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q18",
+      "question": "VIP 琥珀",
+      "expected_title": "VIP 琥珀",
+      "station": "vip",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q19",
+      "question": "零度青柠",
+      "expected_title": "零度青柠",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q20",
+      "question": "零度乌龙",
+      "expected_title": "零度乌龙",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q21",
+      "question": "椰风菠萝",
+      "expected_title": "椰风菠萝",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q22",
+      "question": "红莓气泡",
+      "expected_title": "红莓气泡",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q23",
+      "question": "低度橙光",
+      "expected_title": "低度橙光",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q24",
+      "question": "低度绯红",
+      "expected_title": "低度绯红",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q25",
+      "question": "冬日桂花",
+      "expected_title": "冬日桂花",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q26",
+      "question": "季节果园试制",
+      "expected_title": "季节果园试制",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q27",
+      "question": "Nightfall G&T",
+      "expected_title": "夜幕金汤力",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q28",
+      "question": "Daiquiri",
+      "expected_title": "经典黛绮莉",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q29",
+      "question": "Margarita",
+      "expected_title": "经典玛格丽特",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q30",
+      "question": "Negroni",
+      "expected_title": "经典内格罗尼",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q31",
+      "question": "Dry Martini",
+      "expected_title": "经典马天尼",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q32",
+      "question": "Mojito",
+      "expected_title": "经典莫吉托",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q33",
+      "question": "Whiskey Sour",
+      "expected_title": "经典威士忌酸",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q34",
+      "question": "Sidecar",
+      "expected_title": "经典边车",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q35",
+      "question": "Espresso Martini",
+      "expected_title": "浓缩咖啡马天尼",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q36",
+      "question": "Rum Ginger",
+      "expected_title": "经典自由古巴变奏",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q37",
+      "question": "Cosmopolitan Demo",
+      "expected_title": "都会红莓",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q38",
+      "question": "Peachless Bellini Demo",
+      "expected_title": "午后贝里尼",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q39",
+      "question": "Oolong Night Flight",
+      "expected_title": "夜航乌龙",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q40",
+      "question": "Osmanthus Dusk",
+      "expected_title": "暮色桂花",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q41",
+      "question": "Neon Grapefruit",
+      "expected_title": "霓虹西柚",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q42",
+      "question": "Backstreet Coffee",
+      "expected_title": "暗巷咖啡",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q43",
+      "question": "Terrace Breeze",
+      "expected_title": "露台晚风",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q44",
+      "question": "VIP Amber",
+      "expected_title": "VIP 琥珀",
+      "station": "vip",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q45",
+      "question": "Zero Lime",
+      "expected_title": "零度青柠",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q46",
+      "question": "Zero Oolong",
+      "expected_title": "零度乌龙",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q47",
+      "question": "Coconut Pineapple Zero",
+      "expected_title": "椰风菠萝",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q48",
+      "question": "Cranberry Fizz Zero",
+      "expected_title": "红莓气泡",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q49",
+      "question": "Low ABV Orange",
+      "expected_title": "低度橙光",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    },
+    {
+      "id": "NF-Q50",
+      "question": "Low ABV Scarlet",
+      "expected_title": "低度绯红",
+      "station": "main",
+      "job": "bartender",
+      "expected_status": "answered"
+    }
+  ]
+}
