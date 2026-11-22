@@ -2,7 +2,7 @@
   "generated_at_utc": "2026-11-22T07:35:51.615Z",
   "candidate_version": "0.7.0-rc.1",
   "tested_code_head": "e73b1ca448e5958e8bbadc81c5d96abc843e3119",
-  "real_main_head": "4e86ad26e0d48d47c6cb8df60e35821f7b4f7126",
+  "real_main_head": "a17518c98525106bccc2f8717ec8b7ddef3c5e7e",
   "remote_observation": {
     "checked_at": "2026-11-22T07:29:29.659Z",
     "runs": [
@@ -179,5 +179,16 @@
   },
   "main_promoted": false,
   "real_device_acceptance": false,
-  "real_venue_question_evaluation": false
+  "real_venue_question_evaluation": false,
+  "later_remote_observation": {
+    "checked_at_utc": "2026-11-22T07:39:31.213Z",
+    "pr1_merged_by_remote": true,
+    "pr1_merged_at": "2026-11-22T07:30:48Z",
+    "nightfall_main_base_head": "7da2ca2acb909d2a16cbf237e45453d73082a9dc",
+    "nightfall_pr": 4,
+    "baseline_pr": 3,
+    "superseded_pr": 2,
+    "candidate_merge_tree_unchanged": true,
+    "agent_merged_pr": false
+  }
 }

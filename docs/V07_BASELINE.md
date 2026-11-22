@@ -1,8 +1,10 @@
 # BarOS V0.7 — 集成候选与真实试点基线
 
-状态：0.7.0-rc.1候选，不是已发布到main。未获得明确合并授权，本轮不自动合并PR，不重写远程历史，不打正式release标签。测试通过只能说明列出的候选和环境已验证。
+状态：0.7.0-rc.1候选，不是已发布到main。工作期间远端已合并G0；本代理没有执行PR合并。未获得明确合并授权，本轮不自动合并PR，不重写远程历史，不打正式release标签。测试通过只能说明列出的候选和环境已验证。
 
 ## 1. 重新核对的真实远程状态
+
+**工作期间再次复核更新：** PR #1已于2026-11-22 15:30:48北京时间由远端操作普通合并；main当前为a17518c98525106bccc2f8717ec8b7ddef3c5e7e。下面最初观察保留为历史，不是最终main。NIGHTFALL已从该最新main建立独立分支feat/nightfall-v07-main@7da2ca2acb909d2a16cbf237e45453d73082a9dc，草稿PR #4目标main。旧临时草稿#2已关闭并指向#4，原分支保留。候选PR #3依赖#4，只评审Task007增量。
 
 核对时间：2026-11-22 15:29北京时间（07:29 UTC）。通过git ls-remote、GitHub PR及Actions API重新查询，未使用用户提供的缩写代替查询。
 
@@ -100,7 +102,7 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8007
 
 | 项目 | 状态及影响 |
 | --- | --- |
-| 正式main集成/发布 | 阻塞：没有明确合并授权，#1/#2和候选仍需按依赖顺序人工批准 |
+| 正式main集成/发布 | 部分完成：G0的#1已由远端操作合并；仍需明确授权依次审批NIGHTFALL #4及候选 #3 |
 | 真机 | 未验证：OPPO、iPhone/Safari、平板、虚拟键盘/横屏、现场灯光/弱网与高峰流程；390px Chromium不是Android/iPhone设备 |
 | 真实资料与问题 | 阻塞：授权材料、有效来源/负责人、岗位/吧台范围和至少50条实际问法/人工标注未交付；NIGHTFALL50问全部合成 |
 | 真实培训资格/安全 | 未验证：模拟实操和安全升级占位不能代替场所批准；过敏标签、消防、医疗等需现场负责人/专业规则 |
@@ -116,3 +118,7 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8007
 ## 7. 本轮远端候选核验入口
 
 候选草稿PR基于feat/task-006-realistic-demo，仅评审Task007增量；不自动合入main。候选最终文档提交保持受测代码不变，GitHub Actions会在该提交重新运行完整矩阵。最终状态与产物请查看[候选分支Actions](https://github.com/cqian7145-cyber/Enterprise-Knowledge-Base/actions?query=branch%3Afeat%2Fv07-pilot-baseline)及PR checks；本报告不将创建PR视为已通过远端CI。
+
+## 8. 最新main对齐的追加记录
+
+从main@a17518c建立NIGHTFALL评审分支，再用普通merge合入原92ddf09；没有cherry-pick重复提交，也没有改写原分支。候选追加合并该评审分支前后git tree完全相同，因此上文受测代码及JUnit仍对应相同代码树；随后只更新此文及机器摘要。最终准确候选HEAD见PR #3，远程CI重新执行全矩阵。当前评审顺序为[独立NIGHTFALL #4](https://github.com/cqian7145-cyber/Enterprise-Knowledge-Base/pull/4) → [基线 #3](https://github.com/cqian7145-cyber/Enterprise-Knowledge-Base/pull/3)，均保持草稿，不自动合并。
