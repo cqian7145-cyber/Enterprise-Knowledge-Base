@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from . import __version__
 from .db import ROOT, audit, connect, encode, initialize, now, password_hash, verify_password
 
 
@@ -246,7 +247,7 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title='BarOS', version='0.6.0', lifespan=lifespan)
+app = FastAPI(title='BarOS', version=__version__, lifespan=lifespan)
 
 
 @app.middleware('http')
