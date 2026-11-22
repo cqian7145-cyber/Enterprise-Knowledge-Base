@@ -73,11 +73,28 @@ def cleanup(days):
 
 def main():
     parser = argparse.ArgumentParser(description='BarOS 初始化与保留期限维护')
-    parser.add_argument('command', choices=['init', 'demo', 'cleanup', 'backup', 'restore'])
+    parser.add_argument('command', choices=['init', 'demo', 'cleanup', 'backup', 'restore', 'seed-realistic-demo'])
     parser.add_argument('--days', type=int, default=30)
     parser.add_argument('--destination', help='备份或恢复的全新目标文件；禁止覆盖已有文件')
     parser.add_argument('--source', help='restore使用的备份文件')
+    parser.add_argument('--database', help='seed-realistic-demo: absolute new file path containing demo')
+    parser.add_argument('--environment', choices=['demo'])
+    parser.add_argument('--confirm', help='Explicit acknowledgement: SIMULATED-DATA')
     args = parser.parse_args()
+    if args.command == 'seed-realistic-demo':
+        from .demo import seed_realistic_demo, validated_target, existing_manifest
+        if not args.database:parser.error('seed-realistic-demo requires --database')
+        try:
+            target=validated_target(args.database,args.environment,args.confirm)
+            existing=existing_manifest(target)
+            password=None
+            if not existing:
+                password=getpass.getpass('SIMULATED DATA / 模拟数据：设置全部演示账号密码（12–200位）：')
+                if password!=getpass.getpass('再次输入：'):raise ValueError('两次密码不一致')
+            result=seed_realistic_demo(target,password,environment=args.environment,confirm=args.confirm)
+        except (ValueError,OSError,RuntimeError) as exc:raise SystemExit(str(exc))
+        print(json.dumps(result,ensure_ascii=False,indent=2))
+        return
     if args.command in ('backup', 'restore'):
         if not args.destination or (args.command == 'restore' and not args.source):
             parser.error('backup需要--destination；restore需要--source和--destination')
